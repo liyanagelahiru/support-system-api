@@ -27,7 +27,11 @@ app.post('/api/tickets', async (req, res) => {
         // Check if the email already exists with status 2
         const [existingTickets] = await pool.query('SELECT * FROM support_tickets WHERE email = ? AND status = 2', [email]);
         if (existingTickets.length > 0) {
-            return res.status(409).send('A ticket with this email and status 2 already exists.');
+            // Update the support_messages table
+            const updateMessageSql = `UPDATE support_messages SET message = CONCAT(message, '<p>', ?, '</p>') WHERE support_ticket_id = ?`;
+            await pool.query(updateMessageSql, [message, existingTickets[0].id]);
+
+            return res.status(200).send('Message updated successfully in the existing ticket.');
         }
 
         // Insert the new ticket
